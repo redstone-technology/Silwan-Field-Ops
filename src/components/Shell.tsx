@@ -144,11 +144,6 @@ function Frame({ children }: { children: ReactNode }) {
           <nav aria-label="Main">
             <NavItem n={home} on={home.href === current.href} alerts={openAlerts.length} />
             <div className="side-sep" />
-            <div className="ws">
-              <span className="wsicon">S</span>
-              <span className="grow ell">Silwan Security</span>
-              <Icon n="chev" s={14} />
-            </div>
             {boards.map((n) => <NavItem key={n.href} n={n} on={n.href === current.href} alerts={openAlerts.length} />)}
           </nav>
           <div className="side-foot">
