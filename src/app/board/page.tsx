@@ -134,7 +134,6 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
             </div>
             <table className="mtable">
               <colgroup>
-                <col style={{ width: 36 }} />
                 <col />
                 <col style={{ width: 96 }} />
                 <col style={{ width: 140 }} />
@@ -144,7 +143,7 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
                 <col style={{ width: 120 }} />
               </colgroup>
               <thead>
-                <tr><th className="cb"><span className="box-cb" /></th><th className="name">Task</th><th>Person</th><th>Status</th><th>Time slot</th><th>Check in</th><th>Check out</th><th>Report</th></tr>
+                <tr><th className="name first">Task</th><th>Person</th><th>Status</th><th>Time slot</th><th>Check in</th><th>Check out</th><th>Report</th></tr>
               </thead>
               <tbody>
                 {g.items.map((a) => {
@@ -158,21 +157,21 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
                   const early = lastOut && ms(lastOut) < ms(a.end) - d.settings.earlyLeaveMin * 60000;
                   const st = statusOf(a);
                   const rep = !a.reportRequired
-                    ? { t: "Not needed", c: "#C4C4C4" }
+                    ? null
                     : reps === a.assigneeIds.length
                       ? { t: "Sent", c: "#00C875" }
-                      : st === "report" || st === "missed"
+                      : st === "report"
                         ? { t: "Missing", c: "#DF2F4A" }
-                        : { t: reps ? `${reps}/${a.assigneeIds.length} sent` : "Waiting", c: "#C4C4C4" };
+                        : reps
+                          ? { t: `${reps}/${a.assigneeIds.length} sent`, c: "#FDAB3D" }
+                          : null;
                   return (
                     <tr key={a.id} onClick={() => open({ type: "assignment", id: a.id })}>
-                      <td className="cb"><span className="box-cb" /></td>
-                      <td className="name">
+                      <td className="name first">
                         <span className="row" style={{ gap: 8 }}>
                           <span className="ell grow">{a.title}</span>
                           {a.kind === "maintenance" && <span className="tag-t">Ticket</span>}
                           {group === "team" && <span className="tag-t ell" style={{ maxWidth: 140 }}>{d.sites.find((s) => s.id === a.siteId)?.name}</span>}
-                          <span className="upd" title="Open details"><Icon n="chat" s={18} /></span>
                         </span>
                       </td>
                       <td><Avatars people={ppl} max={3} /></td>
@@ -183,22 +182,21 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
                           <span>{multiDay && `${format(new Date(a.start), "MMM d")}, `}{slot(a.start, a.end)}</span>
                         </span>
                       </td>
-                      <td style={{ color: late ? "var(--down)" : undefined, fontWeight: late ? 600 : undefined }}>{hm(firstIn)}</td>
-                      <td style={{ color: early ? "var(--down)" : undefined, fontWeight: early ? 600 : undefined }}>{lastOut ? hm(lastOut) : "—"}</td>
-                      <td className="stat"><span className={`status cell${rep.c === "#C4C4C4" ? " dark" : ""}`} style={{ background: rep.t === "Not needed" ? "var(--ui-bg)" : rep.c, color: rep.t === "Not needed" ? "var(--muted)" : undefined }}>{rep.t}</span></td>
+                      <td style={{ color: late ? "var(--down)" : undefined, fontWeight: late ? 600 : undefined }}>{firstIn ? hm(firstIn) : ""}</td>
+                      <td style={{ color: early ? "var(--down)" : undefined, fontWeight: early ? 600 : undefined }}>{lastOut ? hm(lastOut) : ""}</td>
+                      <td className="stat">{rep && <span className="status cell" style={{ background: rep.c }}>{rep.t}</span>}</td>
                     </tr>
                   );
                 })}
                 {canEdit(d, me) && (
                   <tr className="addrow" onClick={() => open({ type: "assign", siteId: group === "site" ? g.id : undefined })}>
-                    <td className="cb"><span className="box-cb" /></td>
-                    <td colSpan={7}>+ Add task</td>
+                    <td className="first" colSpan={7}>+ Add task</td>
                   </tr>
                 )}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3} />
+                  <td colSpan={2} />
                   <td><Battery keys={keys} /></td>
                   <td colSpan={4} />
                 </tr>

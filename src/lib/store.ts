@@ -16,6 +16,8 @@ export type LocMode = "gps" | "at-site" | "away";
 interface State extends Data {
   currentUserId: string;
   seededDay: string;
+  /** When the sample data was built (ms). Rebuilt when older than 3 hours so times look live. */
+  seededAt: number;
   acknowledged: Record<string, string>;
   locMode: LocMode;
   consented: Record<string, boolean>;
@@ -49,6 +51,7 @@ export const useStore = create<State>()(
       attempts: [],
       currentUserId: "p-owner",
       seededDay: "",
+      seededAt: 0,
       acknowledged: {},
       locMode: "gps",
       consented: {},
@@ -61,6 +64,7 @@ export const useStore = create<State>()(
           ...seed,
           sites: [...seed.sites, ...custom],
           seededDay: new Date().toDateString(),
+          seededAt: Date.now(),
           acknowledged: {},
         });
       },

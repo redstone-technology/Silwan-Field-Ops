@@ -42,11 +42,14 @@ export function Shell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const seededDay = useStore((s) => s.seededDay);
   const resetDemo = useStore((s) => s.resetDemo);
+  const path = useAppPath();
 
   // Wait for saved data to load from the browser, then refresh sample data once a day
   useEffect(() => {
     const go = () => {
-      if (useStore.getState().seededDay !== new Date().toDateString()) useStore.getState().resetDemo();
+      const st = useStore.getState();
+      // sample data is built around "now": rebuild it on a new day or when it is over 3 hours old
+      if (st.seededDay !== new Date().toDateString() || Date.now() - (st.seededAt ?? 0) > 3 * 3_600_000) st.resetDemo();
       // the preview frame blocks GPS, so use a pretend location there
       if (IS_ARTIFACT && useStore.getState().locMode === "gps") useStore.getState().setLocMode("at-site");
       setReady(true);
@@ -57,6 +60,8 @@ export function Shell({ children }: { children: ReactNode }) {
     else return ps.onFinishHydration(go);
   }, [resetDemo]);
 
+  // the story page is a full-screen presentation, without the app around it
+  if (path.startsWith("/story")) return <>{children}</>;
   if (!ready || !seededDay) {
     return (
       <div className="page">
@@ -109,9 +114,7 @@ function Frame({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="tb-icon" aria-hidden><Icon n="grid" s={18} /></span>
         <div className="brand">
-          <span className="logo" aria-hidden>S</span>
           <b>Silwan</b>
           <span className="brand-sub">field ops</span>
         </div>
