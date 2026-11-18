@@ -80,7 +80,6 @@ const pickIcon = L.divIcon({
 });
 
 export default function MapView({ sites, people = [], dots = [], pick, pickRadius = 150, onPick, onSiteClick, showLabels = true, fitKey, zoom }: MapProps) {
-  const dark = false; // light mode only, like monday
   const pts = useMemo<[number, number][]>(() => {
     const all: [number, number][] = [
       ...sites.map((s) => [s.lat, s.lng] as [number, number]),
@@ -104,9 +103,9 @@ export default function MapView({ sites, people = [], dots = [], pick, pickRadiu
   return (
     <MapContainer center={[DOHA.lat, DOHA.lng]} zoom={11} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl>
       {!IS_ARTIFACT && <TileLayer
-        key={dark ? "d" : "l"}
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url={`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "rastertiles/voyager"}/{z}/{x}/{y}{r}.png`}
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
       />}
       {IS_ARTIFACT && <PreviewNote />}
       <Fit pts={pts} fitKey={fitKey} zoom={zoom} />
