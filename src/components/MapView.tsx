@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Person, Site } from "@/lib/types";
 import { DOHA } from "@/lib/geo";
 import { initials } from "@/lib/time";
+import { IS_ARTIFACT } from "./AppLink";
 
 export interface PersonPin {
   person: Person;
@@ -69,6 +70,14 @@ function Fit({ pts, fitKey, zoom }: { pts: [number, number][]; fitKey?: string; 
   return null;
 }
 
+function PreviewNote() {
+  return (
+    <div style={{ position: "absolute", insetInlineEnd: 8, bottom: 8, zIndex: 500 }} className="pill">
+      Street map shows on the live link
+    </div>
+  );
+}
+
 function Picker({ onPick }: { onPick: (p: { lat: number; lng: number }) => void }) {
   useMapEvents({ click: (e) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
   return null;
@@ -114,11 +123,12 @@ export default function MapView({ sites, people = [], dots = [], pick, pickRadiu
 
   return (
     <MapContainer center={[DOHA.lat, DOHA.lng]} zoom={11} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl>
-      <TileLayer
+      {!IS_ARTIFACT && <TileLayer
         key={dark ? "d" : "l"}
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
         url={`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "rastertiles/voyager"}/{z}/{x}/{y}{r}.png`}
-      />
+      />}
+      {IS_ARTIFACT && <PreviewNote />}
       <Fit pts={pts} fitKey={fitKey} zoom={zoom} />
       {onPick && <Picker onPick={onPick} />}
       {sites.map((s) => (

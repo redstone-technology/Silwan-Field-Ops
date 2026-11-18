@@ -5,12 +5,14 @@ import { isManager, leadOf } from "@/lib/rules";
 import { addDays, format, hoursText, weekDays, isSameDay, ms } from "@/lib/time";
 import { Avatar, Icon, useUI } from "@/components/ui";
 import { weekRows } from "@/components/Drawers";
+import { IS_ARTIFACT } from "@/components/AppLink";
 
 export default function Timesheets() {
   const d = useData();
   const me = useMe();
   const now = useNow();
   const open = useUI((s) => s.open);
+  const say = useUI((s) => s.say);
   const [offset, setOffset] = useState(0);
   const [team, setTeam] = useState("");
   const ref = addDays(new Date(now), offset * 7);
@@ -58,6 +60,14 @@ export default function Timesheets() {
       r.missed,
     ]);
     const text = [head, ...lines].map((l) => l.map((c) => `"${c}"`).join(",")).join("\n");
+    if (IS_ARTIFACT) {
+      // downloads are blocked in the Claude preview, so copy instead
+      navigator.clipboard.writeText(text).then(
+        () => say("Timesheet copied. Paste it into Excel or Google Sheets."),
+        () => say("Couldn't copy here. Export works on the live link."),
+      );
+      return;
+    }
     const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -80,7 +90,7 @@ export default function Timesheets() {
           {d.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <span className="grow" />
-        <button className="btn ghost sm" onClick={csv}><Icon n="down" s={16} /> Export CSV</button>
+        <button className="btn ghost sm" onClick={csv}><Icon n="down" s={16} /> {IS_ARTIFACT ? "Copy for Excel" : "Export CSV"}</button>
       </div>
       <div className="card" style={{ padding: "12px 14px" }}>
         <table className="tbl" style={{ minWidth: 900 }}>

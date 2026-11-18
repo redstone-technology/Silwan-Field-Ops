@@ -7,6 +7,7 @@ import { distanceM, fmtDist, offset } from "@/lib/geo";
 import { ageMs, hm, isSameDay, minsText, ms, newId, slot } from "@/lib/time";
 import { Icon, StatusLabel, useUI, Empty } from "@/components/ui";
 import { Map } from "@/components/Map";
+import { IS_ARTIFACT } from "@/components/AppLink";
 
 /** Read the phone's real position (or a demo position). */
 function readLocation(mode: LocMode, site: Site): Promise<GeoPoint> {
@@ -350,17 +351,23 @@ function DemoTools({ onCreated }: { onCreated: (id: string) => void }) {
   };
 
   return (
-    <details className="card" style={{ padding: 16 }}>
+    <details className="card" style={{ padding: 16 }} open={IS_ARTIFACT}>
       <summary className="muted small" style={{ cursor: "pointer", fontWeight: 600 }}>Demo tools (not in the real app)</summary>
       <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
         <span className="small">Where should the app think you are?</span>
         <div className="seg" style={{ flexWrap: "wrap" }}>
-          <button className={mode === "gps" ? "on" : ""} onClick={() => setMode("gps")}>Real GPS</button>
+          {!IS_ARTIFACT && <button className={mode === "gps" ? "on" : ""} onClick={() => setMode("gps")}>Real GPS</button>}
           <button className={mode === "at-site" ? "on" : ""} onClick={() => setMode("at-site")}>At the site</button>
           <button className={mode === "away" ? "on" : ""} onClick={() => setMode("away")}>1.2 km away</button>
         </div>
-        <span className="muted small">Keep &ldquo;Real GPS&rdquo; for the live test. The sample sites are around Doha, so a real check-in from the office will be blocked (that&apos;s correct!). To see a real check-in pass, make a test job right where you are:</span>
-        <button className="btn ghost sm" onClick={testHere} disabled={busy}><Icon n="gps" s={16} /> {busy ? "Reading GPS…" : "Create a test job where I am"}</button>
+        {IS_ARTIFACT ? (
+          <span className="muted small">This Claude preview can&apos;t read the phone&apos;s GPS, so it uses a pretend location. The live link checks real GPS.</span>
+        ) : (
+          <>
+            <span className="muted small">Keep &ldquo;Real GPS&rdquo; for the live test. The sample sites are around Doha, so a real check-in from the office will be blocked (that&apos;s correct!). To see a real check-in pass, make a test job right where you are:</span>
+            <button className="btn ghost sm" onClick={testHere} disabled={busy}><Icon n="gps" s={16} /> {busy ? "Reading GPS…" : "Create a test job where I am"}</button>
+          </>
+        )}
         {err && <span className="small" style={{ color: "var(--down)" }}>{err}</span>}
       </div>
     </details>

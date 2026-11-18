@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { AppLink } from "@/components/AppLink";
 import { useMemo, useState } from "react";
 import { useData, useNow, useAlerts, useStore } from "@/lib/store";
 import { useVisible, useTeamNow, isToday, useStatusOf } from "@/lib/hooks";
@@ -57,7 +57,7 @@ export default function Today() {
         <div className="card fill" style={{ flex: 1 }}>
           <div className="card-h">
             <h2>{bucket === "all" ? "Today's jobs" : `Today · ${bucket === "scheduled" ? "coming" : bucket === "onsite" ? "on site" : bucket}`}</h2>
-            <Link href="/board" className="linkbtn">Board →</Link>
+            <AppLink href="/board" className="linkbtn">Board →</AppLink>
           </div>
           <div className="body list">
             {list.map((a) => {
@@ -124,7 +124,7 @@ export default function Today() {
         <div className="card fill" style={{ flex: 1 }}>
           <div className="card-h">
             <h2>Live alerts</h2>
-            <Link href="/alerts" className="linkbtn">All →</Link>
+            <AppLink href="/alerts" className="linkbtn">All →</AppLink>
           </div>
           <div className="body list">
             {alerts.map((al) => (

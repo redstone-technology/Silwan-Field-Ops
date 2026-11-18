@@ -20,6 +20,7 @@ import { fmtDist } from "@/lib/geo";
 import { addDays, dayLabel, format, hm, hoursText, minsText, ms, newId, slot, weekStart } from "@/lib/time";
 import { Avatar, Drawer, Icon, StatusLabel, useUI } from "./ui";
 import { Map } from "./Map";
+import { IS_ARTIFACT } from "./AppLink";
 
 export function Drawers() {
   const d = useUI((s) => s.drawer);
@@ -465,6 +466,10 @@ function SiteForm({ id, back, onClose }: { id?: string; back?: boolean; onClose:
         </label>
         <div className="box">
           <span className="cap">Location</span>
+          {IS_ARTIFACT ? (
+            <span className="muted small">Tap the map to drop a pin. (Place search and &ldquo;use my location&rdquo; work on the live link, not in this Claude preview.)</span>
+          ) : (
+            <>
           <div className="row">
             <input
               className="input grow"
@@ -484,8 +489,10 @@ function SiteForm({ id, back, onClose }: { id?: string; back?: boolean; onClose:
             <button className="btn ghost sm" onClick={here} disabled={busy === "gps"}><Icon n="gps" s={16} /> {busy === "gps" ? "Getting location…" : "Use my location"}</button>
             <span className="muted small">or tap the map to drop a pin</span>
           </div>
+            </>
+          )}
           <div className="mapbox" style={{ height: 260 }}>
-            <Map sites={[]} pick={pick} pickRadius={radius} onPick={setPick} fitKey={fitKey} zoom={16} />
+            <Map sites={IS_ARTIFACT || !pick ? d.sites.filter((x) => x.id !== id) : []} pick={pick} pickRadius={radius} onPick={setPick} fitKey={fitKey} zoom={pick ? 16 : 11} showLabels={IS_ARTIFACT} />
           </div>
           <label className="f">
             <span className="row">Check-in zone <span className="grow" /><span className="pill forest">{radius} m</span></span>

@@ -1,11 +1,28 @@
 "use client";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, type ComponentType } from "react";
 import { useStore, useMe, useNow, useAlerts } from "@/lib/store";
 import { isManager } from "@/lib/rules";
 import { Icon, Toast, useUI } from "./ui";
 import { Drawers } from "./Drawers";
+import { AppLink, IS_ARTIFACT, useAppPath, useGo } from "./AppLink";
+import TodayPage from "@/app/page";
+import BoardPage from "@/app/board/page";
+import SitesPage from "@/app/sites/page";
+import AlertsPage from "@/app/alerts/page";
+import TimesheetsPage from "@/app/timesheets/page";
+import TechPage from "@/app/tech/page";
+import TechWeekPage from "@/app/tech/week/page";
+
+// Used only in the Claude preview build, where everything is one page with #hash views
+const PAGES: Record<string, ComponentType> = {
+  "/": TodayPage,
+  "/board": BoardPage,
+  "/sites": SitesPage,
+  "/alerts": AlertsPage,
+  "/timesheets": TimesheetsPage,
+  "/tech": TechPage,
+  "/tech/week": TechWeekPage,
+};
 
 const MANAGER_NAV = [
   { href: "/", label: "Today", icon: "home" },
@@ -30,10 +47,14 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const go = () => {
       if (useStore.getState().seededDay !== new Date().toDateString()) useStore.getState().resetDemo();
+      // the preview frame blocks GPS, so use a pretend location there
+      if (IS_ARTIFACT && useStore.getState().locMode === "gps") useStore.getState().setLocMode("at-site");
       setReady(true);
     };
-    if (useStore.persist.hasHydrated()) go();
-    else return useStore.persist.onFinishHydration(go);
+    // persist can be missing if the browser blocks storage (some preview frames)
+    const ps = useStore.persist;
+    if (!ps || ps.hasHydrated()) go();
+    else return ps.onFinishHydration(go);
   }, [resetDemo]);
 
   if (!ready || !seededDay) {
@@ -53,8 +74,8 @@ function Frame({ children }: { children: ReactNode }) {
   const people = useStore((s) => s.people);
   const setUser = useStore((s) => s.setUser);
   const resetDemo = useStore((s) => s.resetDemo);
-  const path = usePathname();
-  const router = useRouter();
+  const path = useAppPath();
+  const go = useGo();
   const open = useUI((s) => s.open);
   const say = useUI((s) => s.say);
   const now = useNow();
@@ -64,22 +85,31 @@ function Frame({ children }: { children: ReactNode }) {
 
   // technicians only get their phone screens
   useEffect(() => {
-    if (field && !path.startsWith("/tech")) router.replace("/tech");
-  }, [field, path, router]);
+    if (field && !path.startsWith("/tech")) go("/tech", true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field, path]);
 
   // Frame only renders in the browser (after Shell is ready), so localStorage is safe here
-  const [theme, setTheme] = useState<string>(() => localStorage.getItem("theme") ?? "auto");
+  const [theme, setTheme] = useState<string>(() => {
+    try {
+      return localStorage.getItem("theme") ?? "auto";
+    } catch {
+      return "auto";
+    }
+  });
   useEffect(() => {
     if (theme === "auto") delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {}
   }, [theme]);
 
   const switchUser = (id: string) => {
     setUser(id);
     const p = people.find((x) => x.id === id)!;
-    if (p.role === "technician") router.push("/tech");
-    else if (path.startsWith("/tech") && p.role !== "lead") router.push("/");
+    if (p.role === "technician") go("/tech");
+    else if (path.startsWith("/tech") && p.role !== "lead") go("/");
     say(`Now viewing as ${p.name} (${ROLE_LABEL[p.role]})`);
   };
 
@@ -98,10 +128,10 @@ function Frame({ children }: { children: ReactNode }) {
             {nav.map((n) => {
               const on = n.href === "/" ? path === "/" : path === n.href || (n.href !== "/tech" && path.startsWith(n.href));
               return (
-                <Link key={n.href} href={n.href} className={`navpill${on ? " on" : ""}`}>
+                <AppLink key={n.href} href={n.href} className={`navpill${on ? " on" : ""}`}>
                   {n.label}
                   {n.href === "/alerts" && openAlerts.length > 0 && <span className="badge">{openAlerts.length}</span>}
-                </Link>
+                </AppLink>
               );
             })}
           </nav>
@@ -129,7 +159,7 @@ function Frame({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main>
-          <div className="fadein" key={path}>{children}</div>
+          <div className="fadein" key={path}>{IS_ARTIFACT ? <Page path={path} /> : children}</div>
         </main>
         <footer className="bottom">
           <span className="wm"><i></i>by Redstone</span>
@@ -146,4 +176,9 @@ function Frame({ children }: { children: ReactNode }) {
       <Toast />
     </div>
   );
+}
+
+function Page({ path }: { path: string }) {
+  const P = PAGES[path] ?? TodayPage;
+  return <P />;
 }
