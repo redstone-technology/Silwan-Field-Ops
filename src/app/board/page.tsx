@@ -14,6 +14,8 @@ type Group = "site" | "team";
 
 export default function Board() {
   const d = useData();
+  const me = useMe();
+  const open = useUI((s) => s.open);
   const now = useNow();
   const visible = useVisible();
   const [view, setView] = useState<View>("table");
@@ -46,43 +48,64 @@ export default function Board() {
 
   return (
     <div className="boardwrap">
-      <div className="toolbar">
-        <div className="tabs">
-          <button className={view === "table" ? "on" : ""} onClick={() => setView("table")}><Icon n="board" s={16} /> Main table</button>
-          <button className={view === "kanban" ? "on" : ""} onClick={() => setView("kanban")}><Icon n="kanban" s={16} /> Kanban</button>
-          <button className={view === "calendar" ? "on" : ""} onClick={() => setView("calendar")}><Icon n="cal" s={16} /> Calendar</button>
-        </div>
-        {view !== "calendar" ? (
-          <div className="row" style={{ gap: 6 }}>
-            {(["today", "week", "all"] as Range[]).map((r) => (
-              <button key={r} className={`chip${range === r ? " on" : ""}`} onClick={() => setRange(r)}>{r === "today" ? "Today" : r === "week" ? "This week" : "All"}</button>
-            ))}
-          </div>
-        ) : (
-          <div className="row" style={{ gap: 6 }}>
-            <button className="chip" onClick={() => setWeekOffset(weekOffset - 1)} aria-label="Previous week"><Icon n="back" s={16} /></button>
-            <button className={`chip${weekOffset === 0 ? " on" : ""}`} onClick={() => setWeekOffset(0)}>This week</button>
-            <button className="chip" onClick={() => setWeekOffset(weekOffset + 1)} aria-label="Next week"><Icon n="fwd" s={16} /></button>
-          </div>
-        )}
-        <select className="search" style={{ minWidth: 0 }} value={team} onChange={(e) => setTeam(e.target.value)} aria-label="Team">
-          <option value="">All teams</option>
-          {d.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        <select className="search" style={{ minWidth: 0 }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Type">
-          <option value="">Tasks + tickets</option>
-          <option value="task">Project tasks</option>
-          <option value="maintenance">Maintenance tickets</option>
-        </select>
-        {view === "table" && (
-          <select className="search" style={{ minWidth: 0 }} value={group} onChange={(e) => setGroup(e.target.value as Group)} aria-label="Group by">
-            <option value="site">Group: Site</option>
-            <option value="team">Group: Team</option>
-          </select>
-        )}
-        <input className="search grow" placeholder="Search task, site, person" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="tabs">
+        <button className={view === "table" ? "on" : ""} onClick={() => setView("table")}><Icon n="home" s={16} /> Main table</button>
+        <button className={view === "kanban" ? "on" : ""} onClick={() => setView("kanban")}><Icon n="kanban" s={16} /> Kanban</button>
+        <button className={view === "calendar" ? "on" : ""} onClick={() => setView("calendar")}><Icon n="cal" s={16} /> Calendar</button>
       </div>
-      <div className="card" style={{ padding: view === "table" ? "16px 18px" : 14 }}>
+      <div className="toolbar">
+        {canEdit(d, me) && (
+          <span className="split">
+            <button className="btn" onClick={() => open({ type: "assign" })}>New task</button>
+            <button className="btn" aria-label="New maintenance ticket" title="New task" onClick={() => open({ type: "assign" })}><Icon n="chev" s={14} /></button>
+          </span>
+        )}
+        <label className="tbtn search-t">
+          <Icon n="search" s={17} />
+          <input placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        {view !== "calendar" ? (
+          <label className="tbtn">
+            <Icon n="cal" s={17} />
+            <select value={range} onChange={(e) => setRange(e.target.value as Range)} aria-label="Dates">
+              <option value="today">Today</option>
+              <option value="week">This week</option>
+              <option value="all">All dates</option>
+            </select>
+          </label>
+        ) : (
+          <span className="row" style={{ gap: 2 }}>
+            <button className="tbtn" onClick={() => setWeekOffset(weekOffset - 1)} aria-label="Previous week"><Icon n="back" s={16} /></button>
+            <button className="tbtn" onClick={() => setWeekOffset(0)}>This week</button>
+            <button className="tbtn" onClick={() => setWeekOffset(weekOffset + 1)} aria-label="Next week"><Icon n="fwd" s={16} /></button>
+          </span>
+        )}
+        <label className="tbtn">
+          <Icon n="person" s={17} />
+          <select value={team} onChange={(e) => setTeam(e.target.value)} aria-label="Team">
+            <option value="">Person: all teams</option>
+            {d.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </label>
+        <label className="tbtn">
+          <Icon n="filter" s={17} />
+          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Filter">
+            <option value="">Filter</option>
+            <option value="task">Project tasks</option>
+            <option value="maintenance">Maintenance tickets</option>
+          </select>
+        </label>
+        {view === "table" && (
+          <label className="tbtn">
+            <Icon n="layers" s={17} />
+            <select value={group} onChange={(e) => setGroup(e.target.value as Group)} aria-label="Group by">
+              <option value="site">Group by: Site</option>
+              <option value="team">Group by: Team</option>
+            </select>
+          </label>
+        )}
+      </div>
+      <div className="card">
         {view === "table" && <TableView items={filtered} group={group} now={now} />}
         {view === "kanban" && <KanbanView items={filtered} now={now} />}
         {view === "calendar" && <CalendarView items={filtered} now={now} weekOffset={weekOffset} />}
@@ -91,7 +114,19 @@ export default function Board() {
   );
 }
 
-/* ---------------- table (monday style) ---------------- */
+/* ---------------- table (monday main table) ---------------- */
+function Battery({ keys }: { keys: StatusKey[] }) {
+  const counts = new Map<StatusKey, number>();
+  keys.forEach((k) => counts.set(k, (counts.get(k) ?? 0) + 1));
+  return (
+    <span className="battery" title={[...counts].map(([k, n]) => `${STATUS[k].label}: ${n}`).join(" · ")}>
+      {[...counts].map(([k, n]) => (
+        <i key={k} style={{ background: STATUS[k].color, flex: n }} />
+      ))}
+    </span>
+  );
+}
+
 function TableView({ items, group, now }: { items: Assignment[]; group: Group; now: number }) {
   const d = useData();
   const me = useMe();
@@ -102,69 +137,99 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
       ? d.sites.map((s) => ({ id: s.id, name: s.name, sub: `${s.client} · ${s.stage}`, color: s.color, items: items.filter((a) => a.siteId === s.id) }))
       : d.teams.map((t) => ({ id: t.id, name: t.name, sub: "Team", color: t.color, items: items.filter((a) => a.teamId === t.id) }));
   const shown = groups.filter((g) => g.items.length);
-  if (!shown.length) return <Empty title="No tasks match" text="Try another filter, or add a task." action={canEdit(d, me) ? <button className="btn lime" onClick={() => open({ type: "assign" })}>New task</button> : undefined} />;
+  if (!shown.length) return <Empty title="No tasks match" text="Try another filter, or add a task." action={canEdit(d, me) ? <button className="btn" onClick={() => open({ type: "assign" })}>New task</button> : undefined} />;
 
   const multiDay = new Set(items.map((a) => new Date(a.start).toDateString())).size > 1;
   return (
     <div style={{ overflowX: "auto" }}>
-      {shown.map((g) => (
-        <section className="group" key={g.id} style={{ ["--g" as string]: g.color, minWidth: 820 }}>
-          <div className="group-h">
-            <h3 style={{ color: g.color }}>{g.name}</h3>
-            <span className="muted small">{g.sub}</span>
-            <span className="pill">{g.items.length}</span>
-          </div>
-          <table className="mtable">
-            <colgroup>
-              <col style={{ width: "30%" }} />
-              <col style={{ width: 92 }} />
-              <col style={{ width: 128 }} />
-              <col style={{ width: multiDay ? 150 : 110 }} />
-              <col style={{ width: 82 }} />
-              <col style={{ width: 82 }} />
-              <col style={{ width: 82 }} />
-            </colgroup>
-            <thead>
-              <tr><th>Task</th><th>Owner</th><th>Status</th><th>Time slot</th><th>Check in</th><th>Check out</th><th>Report</th></tr>
-            </thead>
-            <tbody>
-              {g.items.map((a) => {
-                const ppl = a.assigneeIds.map((p) => d.people.find((x) => x.id === p));
-                const atts = a.assigneeIds.map((p) => attFor(d, a.id, p));
-                const firstIn = atts.map((x) => x?.checkInAt).filter(Boolean).sort()[0];
-                const allOut = atts.every((x) => x?.checkOutAt);
-                const lastOut = allOut ? atts.map((x) => x?.checkOutAt).sort().reverse()[0] : undefined;
-                const reps = a.assigneeIds.filter((p) => reportFor(d, a.id, p)).length;
-                const late = firstIn && ms(firstIn) > ms(a.start) + d.settings.lateGraceMin * 60000;
-                const early = lastOut && ms(lastOut) < ms(a.end) - d.settings.earlyLeaveMin * 60000;
-                return (
-                  <tr key={a.id} onClick={() => open({ type: "assignment", id: a.id })}>
-                    <td>
-                      <span className="row" style={{ gap: 8 }}>
-                        <span className="muted" style={{ display: "inline-flex" }}><Icon n={a.kind === "maintenance" ? "wrench" : "cam"} s={16} /></span>
-                        <span className="ell" style={{ fontWeight: 600 }}>{a.title}</span>
-                        {group === "team" && <span className="pill ell" style={{ maxWidth: 140 }}>{d.sites.find((s) => s.id === a.siteId)?.name}</span>}
-                        {a.visibility === "assigned" && <span className="muted" title="Only assigned people can see this"><Icon n="lock" s={14} /></span>}
-                      </span>
-                    </td>
-                    <td><Avatars people={ppl} max={3} /></td>
-                    <td className="stat"><StatusLabel k={statusOf(a)} cell /></td>
-                    <td className="small">{multiDay && <span className="muted">{format(new Date(a.start), "EEE d")} · </span>}{slot(a.start, a.end)}</td>
-                    <td className="small" style={{ color: late ? "var(--down)" : undefined, fontWeight: late ? 700 : undefined }}>{hm(firstIn)}</td>
-                    <td className="small" style={{ color: early ? "var(--down)" : undefined, fontWeight: early ? 700 : undefined }}>{lastOut ? hm(lastOut) : "—"}</td>
-                    <td className="small">{!a.reportRequired ? <span className="muted">Not needed</span> : reps === a.assigneeIds.length ? <span style={{ color: "var(--up)", fontWeight: 700 }}>Sent</span> : reps ? `${reps}/${a.assigneeIds.length}` : "—"}</td>
+      {shown.map((g) => {
+        const keys = g.items.map((a) => statusOf(a));
+        const first = g.items[0];
+        const last = g.items[g.items.length - 1];
+        return (
+          <section className="group" key={g.id} style={{ ["--g" as string]: g.color, minWidth: 900 }}>
+            <div className="group-h">
+              <span className="gchev"><Icon n="chev" s={16} /></span>
+              <h3>{g.name}</h3>
+              <span className="muted small">{g.items.length} {g.items.length === 1 ? "task" : "tasks"} · {g.sub}</span>
+            </div>
+            <table className="mtable">
+              <colgroup>
+                <col style={{ width: 36 }} />
+                <col />
+                <col style={{ width: 96 }} />
+                <col style={{ width: 140 }} />
+                <col style={{ width: multiDay ? 190 : 140 }} />
+                <col style={{ width: 96 }} />
+                <col style={{ width: 96 }} />
+                <col style={{ width: 120 }} />
+              </colgroup>
+              <thead>
+                <tr><th className="cb"><span className="box-cb" /></th><th className="name">Task</th><th>Person</th><th>Status</th><th>Time slot</th><th>Check in</th><th>Check out</th><th>Report</th></tr>
+              </thead>
+              <tbody>
+                {g.items.map((a) => {
+                  const ppl = a.assigneeIds.map((p) => d.people.find((x) => x.id === p));
+                  const atts = a.assigneeIds.map((p) => attFor(d, a.id, p));
+                  const firstIn = atts.map((x) => x?.checkInAt).filter(Boolean).sort()[0];
+                  const allOut = atts.every((x) => x?.checkOutAt);
+                  const lastOut = allOut ? atts.map((x) => x?.checkOutAt).sort().reverse()[0] : undefined;
+                  const reps = a.assigneeIds.filter((p) => reportFor(d, a.id, p)).length;
+                  const late = firstIn && ms(firstIn) > ms(a.start) + d.settings.lateGraceMin * 60000;
+                  const early = lastOut && ms(lastOut) < ms(a.end) - d.settings.earlyLeaveMin * 60000;
+                  const st = statusOf(a);
+                  const rep = !a.reportRequired
+                    ? { t: "Not needed", c: "#C4C4C4" }
+                    : reps === a.assigneeIds.length
+                      ? { t: "Sent", c: "#00C875" }
+                      : st === "report" || st === "missed"
+                        ? { t: "Missing", c: "#DF2F4A" }
+                        : { t: reps ? `${reps}/${a.assigneeIds.length} sent` : "Waiting", c: "#C4C4C4" };
+                  return (
+                    <tr key={a.id} onClick={() => open({ type: "assignment", id: a.id })}>
+                      <td className="cb"><span className="box-cb" /></td>
+                      <td className="name">
+                        <span className="row" style={{ gap: 8 }}>
+                          <span className="ell grow">{a.title}</span>
+                          {a.kind === "maintenance" && <span className="tag-t">Ticket</span>}
+                          {group === "team" && <span className="tag-t ell" style={{ maxWidth: 140 }}>{d.sites.find((s) => s.id === a.siteId)?.name}</span>}
+                          {a.visibility === "assigned" && <span className="muted" title="Only assigned people can see this"><Icon n="lock" s={14} /></span>}
+                          <span className="upd" title="Open details"><Icon n="chat" s={18} /></span>
+                        </span>
+                      </td>
+                      <td><Avatars people={ppl} max={3} /></td>
+                      <td className="stat"><StatusLabel k={st} cell /></td>
+                      <td>
+                        <span className="tl-pill">
+                          <i style={{ width: `${Math.min(100, Math.max(0, ((now - ms(a.start)) / (ms(a.end) - ms(a.start))) * 100))}%` }} />
+                          <span>{multiDay && `${format(new Date(a.start), "MMM d")}, `}{slot(a.start, a.end)}</span>
+                        </span>
+                      </td>
+                      <td style={{ color: late ? "var(--down)" : undefined, fontWeight: late ? 600 : undefined }}>{hm(firstIn)}</td>
+                      <td style={{ color: early ? "var(--down)" : undefined, fontWeight: early ? 600 : undefined }}>{lastOut ? hm(lastOut) : "—"}</td>
+                      <td className="stat"><span className={`status cell${rep.c === "#C4C4C4" ? " dark" : ""}`} style={{ background: rep.t === "Not needed" ? "var(--ui-bg)" : rep.c, color: rep.t === "Not needed" ? "var(--muted)" : undefined }}>{rep.t}</span></td>
+                    </tr>
+                  );
+                })}
+                {canEdit(d, me) && (
+                  <tr className="addrow" onClick={() => open({ type: "assign", siteId: group === "site" ? g.id : undefined })}>
+                    <td className="cb"><span className="box-cb" /></td>
+                    <td colSpan={7}>+ Add task</td>
                   </tr>
-                );
-              })}
-              {canEdit(d, me) && (
-                <tr className="addrow" onClick={() => open({ type: "assign", siteId: group === "site" ? g.id : undefined })}>
-                  <td colSpan={7}>+ Add task</td>
+                )}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={3} />
+                  <td><Battery keys={keys} /></td>
+                  <td><span className="tl-pill sum"><span>{format(new Date(first.start), "MMM d")}{format(new Date(first.start), "MMM d") !== format(new Date(last.end), "MMM d") ? ` – ${format(new Date(last.end), "MMM d")}` : ""}</span></span></td>
+                  <td colSpan={3} />
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
-      ))}
+              </tfoot>
+            </table>
+          </section>
+        );
+      })}
     </div>
   );
 }

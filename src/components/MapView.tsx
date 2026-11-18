@@ -2,7 +2,7 @@
 // Leaflet + OpenStreetMap (free, no API key). Swap the TileLayer for Google later if wanted.
 import { MapContainer, TileLayer, Circle, Marker, CircleMarker, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import type { Person, Site } from "@/lib/types";
 import { DOHA } from "@/lib/geo";
 import { initials } from "@/lib/time";
@@ -32,26 +32,6 @@ export interface MapProps {
   showLabels?: boolean;
   fitKey?: string;
   zoom?: number;
-}
-
-function useDark() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const m = window.matchMedia("(prefers-color-scheme: dark)");
-    const read = () => {
-      const t = document.documentElement.dataset.theme;
-      setDark(t ? t === "dark" : m.matches);
-    };
-    read();
-    m.addEventListener("change", read);
-    const obs = new MutationObserver(read);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => {
-      m.removeEventListener("change", read);
-      obs.disconnect();
-    };
-  }, []);
-  return dark;
 }
 
 function Fit({ pts, fitKey, zoom }: { pts: [number, number][]; fitKey?: string; zoom?: number }) {
@@ -100,7 +80,7 @@ const pickIcon = L.divIcon({
 });
 
 export default function MapView({ sites, people = [], dots = [], pick, pickRadius = 150, onPick, onSiteClick, showLabels = true, fitKey, zoom }: MapProps) {
-  const dark = useDark();
+  const dark = false; // light mode only, like monday
   const pts = useMemo<[number, number][]>(() => {
     const all: [number, number][] = [
       ...sites.map((s) => [s.lat, s.lng] as [number, number]),

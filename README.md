@@ -52,7 +52,7 @@ src/app/            one folder per screen
 ```
 
 Stack: Next.js (official starter), React, Leaflet + OpenStreetMap/CARTO tiles (no API key), Nominatim search, dnd-kit (kanban), date-fns, Zustand.
-Design: monday.com-style (white boards, blue primary, left sidebar, coloured groups, full-cell status labels; Figtree + Poppins). CSS uses logical properties so Arabic (RTL) can be switched on with `dir="rtl"`.
+Design: monday.com look, built on the colour, font and spacing tokens of monday's open-source design system Vibe (@vibe/style, MIT). Light mode only.
 
 ## Next steps for the real build
 1. Database + login (Supabase/Postgres): tables from `types.ts`, row-level security from `rules.ts` permissions.

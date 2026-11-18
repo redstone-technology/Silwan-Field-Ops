@@ -48,16 +48,16 @@ export type StatusKey =
   | "stuck"
   | "cancelled";
 
-// monday.com-style label colours
+// label colours from monday's open-source design system (Vibe)
 export const STATUS: Record<StatusKey, { label: string; color: string }> = {
   scheduled: { label: "Scheduled", color: "#579BFC" },
   starting: { label: "Starting now", color: "#FFCB00" },
-  late: { label: "Late", color: "#E2445C" },
+  late: { label: "Late", color: "#DF2F4A" },
   onsite: { label: "On site", color: "#FDAB3D" },
-  report: { label: "Report due", color: "#A25DDC" },
+  report: { label: "Report due", color: "#9D50DD" },
   done: { label: "Done", color: "#00C875" },
   missed: { label: "Missed", color: "#BB3354" },
-  stuck: { label: "Stuck", color: "#E2445C" },
+  stuck: { label: "Stuck", color: "#DF2F4A" },
   cancelled: { label: "Cancelled", color: "#C4C4C4" },
 };
 
@@ -244,12 +244,12 @@ export function computeAlerts(d: Data, now: number): AlertItem[] {
 }
 
 export const ALERT_META: Record<AlertItem["type"], { label: string; color: string }> = {
-  late: { label: "Late arrival", color: "#E2445C" },
-  "checkin-rejected": { label: "Outside site", color: "#FF642E" },
+  late: { label: "Late arrival", color: "#DF2F4A" },
+  "checkin-rejected": { label: "Outside site", color: "#FF6D3B" },
   "early-checkout": { label: "Left early", color: "#FDAB3D" },
-  "report-late": { label: "Report late", color: "#A25DDC" },
+  "report-late": { label: "Report late", color: "#9D50DD" },
   overdue: { label: "Overdue", color: "#BB3354" },
-  "still-on-site": { label: "Still on site", color: "#E2445C" },
+  "still-on-site": { label: "Still on site", color: "#E50073" },
 };
 
 /* ---------------- permissions ---------------- */

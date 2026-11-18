@@ -89,21 +89,10 @@ function Frame({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [field, path]);
 
-  // Frame only renders in the browser (after Shell is ready), so localStorage is safe here
-  const [theme, setTheme] = useState<string>(() => {
-    try {
-      return localStorage.getItem("theme") ?? "auto";
-    } catch {
-      return "auto";
-    }
-  });
+  // light mode only, like monday
   useEffect(() => {
-    if (theme === "auto") delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem("theme", theme);
-    } catch {}
-  }, [theme]);
+    document.documentElement.dataset.theme = "light";
+  }, []);
 
   const switchUser = (id: string) => {
     setUser(id);
@@ -115,16 +104,24 @@ function Frame({ children }: { children: ReactNode }) {
 
   const current = nav.find((n) => (n.href === "/" ? path === "/" : path === n.href)) ?? nav[0];
   const sub = PAGE_SUB[current.href] ?? "";
+  const home = nav[0];
+  const boards = nav.slice(1);
 
   return (
     <div className="app">
       <header className="topbar">
+        <span className="tb-icon" aria-hidden><Icon n="grid" s={18} /></span>
         <div className="brand">
-          <div className="logo">S</div>
+          <span className="logo" aria-hidden>S</span>
           <b>Silwan</b>
-          <span className="muted">Field Ops</span>
+          <span className="brand-sub">field ops</span>
         </div>
         <span className="grow" />
+        <AppLink href={field ? "/tech" : "/alerts"} className="tb-icon" >
+          <Icon n="bell" s={19} />
+          {!field && openAlerts.length > 0 && <span className="tb-dot">{openAlerts.length}</span>}
+        </AppLink>
+        <span className="tb-sep" />
         <label className="viewas">
           <span>Viewing as</span>
           <select value={me.id} onChange={(e) => switchUser(e.target.value)} aria-label="Viewing as">
@@ -144,38 +141,31 @@ function Frame({ children }: { children: ReactNode }) {
       </header>
       <div className="body2">
         <aside className="side">
-          <div className="ws">
-            <span className="wsicon">S</span>
-            <span className="ell">Silwan Security</span>
-          </div>
           <nav aria-label="Main">
-            {nav.map((n) => {
-              const on = n.href === current.href;
-              return (
-                <AppLink key={n.href} href={n.href} className={`navitem${on ? " on" : ""}`}>
-                  <Icon n={n.icon} />
-                  <span className="grow ell">{n.label}</span>
-                  {n.href === "/alerts" && openAlerts.length > 0 && <span className="badge">{openAlerts.length}</span>}
-                </AppLink>
-              );
-            })}
+            <NavItem n={home} on={home.href === current.href} alerts={openAlerts.length} />
+            <div className="side-sep" />
+            <div className="ws">
+              <span className="wsicon">S</span>
+              <span className="grow ell">Silwan Security</span>
+              <Icon n="chev" s={14} />
+            </div>
+            {boards.map((n) => <NavItem key={n.href} n={n} on={n.href === current.href} alerts={openAlerts.length} />)}
           </nav>
           <div className="side-foot">
-            <span className="muted small">Sample data</span>
+            <span className="muted small">Sample data ·</span>
             <button className="linkbtn" onClick={() => { resetDemo(); say("Demo data reset"); }}>Reset demo</button>
-            <button className="linkbtn" onClick={() => setTheme(theme === "auto" ? "dark" : theme === "dark" ? "light" : "auto")}>Theme: {theme}</button>
             <span className="wm"><i></i>by Redstone</span>
           </div>
         </aside>
-        <section className="panel">
+        <section className={`panel${path === "/" ? " grey" : ""}`}>
           <div className="phead">
             <div style={{ minWidth: 0 }}>
               <h1>{field ? `Hello, ${me.name.split(" ")[0]}` : current.label}</h1>
               {sub && <p className="muted">{sub}</p>}
             </div>
             <span className="grow" />
-            {!field && (
-              <button className="btn lime" onClick={() => open({ type: "assign" })}>
+            {!field && path !== "/board" && (
+              <button className="btn" onClick={() => open({ type: "assign" })}>
                 <Icon n="plus" s={16} /> <span>New task</span>
               </button>
             )}
@@ -204,4 +194,14 @@ const PAGE_SUB: Record<string, string> = {
 function Page({ path }: { path: string }) {
   const P = PAGES[path] ?? TodayPage;
   return <P />;
+}
+
+function NavItem({ n, on, alerts }: { n: { href: string; label: string; icon: string }; on: boolean; alerts: number }) {
+  return (
+    <AppLink href={n.href} className={`navitem${on ? " on" : ""}`}>
+      <Icon n={n.icon} s={17} />
+      <span className="grow ell">{n.label}</span>
+      {n.href === "/alerts" && alerts > 0 && <span className="badge">{alerts}</span>}
+    </AppLink>
+  );
 }
