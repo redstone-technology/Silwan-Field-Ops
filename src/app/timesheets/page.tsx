@@ -93,7 +93,7 @@ export default function Timesheets() {
         <button className="btn ghost sm" onClick={csv}><Icon n="down" s={16} /> {IS_ARTIFACT ? "Copy for Excel" : "Export CSV"}</button>
       </div>
       <div className="card" style={{ padding: "12px 14px" }}>
-        <table className="tbl" style={{ minWidth: 900 }}>
+        <table className="tbl" style={{ minWidth: 820 }}>
           <thead>
             <tr>
               <th>Technician</th>
@@ -101,9 +101,8 @@ export default function Timesheets() {
                 <th key={x.toISOString()} className="num" style={isSameDay(x, new Date(now)) ? { color: "var(--forest)" } : undefined}>{format(x, "EEE d")}</th>
               ))}
               <th className="num">Planned</th>
-              <th className="num">Actual</th>
-              <th className="num">Gap so far</th>
-              <th>Flags</th>
+              <th className="num">Worked</th>
+              <th className="num">Difference</th>
             </tr>
           </thead>
           <tbody>
@@ -112,37 +111,24 @@ export default function Timesheets() {
               return (
                 <tr key={r.p.id} onClick={() => open({ type: "person-week", id: r.p.id, week: weekISO })}>
                   <td>
-                    <span className="row"><Avatar p={r.p} /> <span><b>{r.p.name}</b><br /><span className="muted small">{d.teams.find((t) => t.id === r.p.teamId)?.name}</span></span></span>
+                    <span className="row"><Avatar p={r.p} /> <span>{r.p.name}</span></span>
                   </td>
                   {r.perDay.map((x, i) => (
-                    <td key={i} className="num small">
-                      {x.planned ? (
-                        <>
-                          <span style={{ fontWeight: 700, color: x.flag ? "var(--down)" : undefined }}>{x.future ? "—" : hoursText(x.actual)}</span>
-                          <span className="muted"> / {hoursText(x.planned)}</span>
-                        </>
-                      ) : (
-                        <span className="muted">·</span>
+                    <td key={i} className="num">
+                      {!x.planned ? <span className="muted">·</span> : x.future ? <span className="muted">{hoursText(x.planned)}</span> : (
+                        <span style={{ color: x.flag ? "var(--down)" : undefined, fontWeight: x.flag ? 600 : undefined }}>{hoursText(x.actual)}</span>
                       )}
                     </td>
                   ))}
-                  <td className="num">{hoursText(r.planned)}</td>
-                  <td className="num"><b>{hoursText(r.actual)}</b></td>
-                  <td className="num" style={{ color: gap < -0.5 ? "var(--down)" : "var(--up)", fontWeight: 700 }}>{gap >= 0 ? "+" : ""}{hoursText(gap)}</td>
-                  <td>
-                    <span className="row" style={{ gap: 4 }}>
-                      {r.late > 0 && <span className="pill red">{r.late} late</span>}
-                      {r.early > 0 && <span className="pill red">{r.early} early</span>}
-                      {r.missed > 0 && <span className="pill red">{r.missed} missed</span>}
-                      {!r.late && !r.early && !r.missed && <span className="pill green">Clean</span>}
-                    </span>
-                  </td>
+                  <td className="num muted">{hoursText(r.planned)}</td>
+                  <td className="num"><b style={{ fontWeight: 600 }}>{hoursText(r.actual)}</b></td>
+                  <td className="num" style={{ color: gap < -0.5 ? "var(--down)" : "var(--up)", fontWeight: 600 }}>{gap >= 0 ? "+" : ""}{hoursText(gap)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        <p className="muted small" style={{ marginTop: 10 }}>Each day shows actual / planned hours. Red = late in, early out or missed. Click a person for the details.</p>
+        <p className="muted small" style={{ marginTop: 10 }}>Hours worked each day. Red = late, left early or missed. Grey = planned.</p>
       </div>
     </div>
   );

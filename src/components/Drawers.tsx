@@ -17,7 +17,7 @@ import {
 import type { Assignment, Kind, Priority, Site, Stage, Visibility, Editors } from "@/lib/types";
 import { STAGES } from "@/lib/types";
 import { fmtDist } from "@/lib/geo";
-import { addDays, dayLabel, format, hm, hoursText, minsText, ms, newId, slot, weekStart } from "@/lib/time";
+import { addDays, dayLabel, format, hm, hoursText, ms, newId, slot, weekStart } from "@/lib/time";
 import { Avatar, Drawer, Icon, StatusLabel, useUI } from "./ui";
 import { Map } from "./Map";
 import { IS_ARTIFACT } from "./AppLink";
@@ -40,14 +40,6 @@ export function Drawers() {
   }
 }
 
-const STATE_PILL: Record<string, { t: string; c: string }> = {
-  waiting: { t: "Not started", c: "" },
-  late: { t: "Late, not here", c: "red" },
-  onsite: { t: "On site", c: "lime" },
-  report: { t: "Report missing", c: "red" },
-  done: { t: "Done", c: "green" },
-  missed: { t: "Missed", c: "red" },
-};
 
 /* ================= assignment details ================= */
 function AssignmentDetails({ id, onClose }: { id: string; onClose: () => void }) {
@@ -78,7 +70,7 @@ function AssignmentDetails({ id, onClose }: { id: string; onClose: () => void })
   return (
     <Drawer
       title={a.title}
-      sub={<span className="row wrap">{a.kind === "maintenance" ? <span className="pill red">Maintenance ticket</span> : <span className="pill">Task</span>} {site.name} · {dayLabel(a.start)} · {slot(a.start, a.end)}</span>}
+      sub={`${site.name} · ${dayLabel(a.start)} · ${slot(a.start, a.end)}`}
       onClose={onClose}
       footer={
         canEdit(d, me, a) ? (
@@ -95,83 +87,57 @@ function AssignmentDetails({ id, onClose }: { id: string; onClose: () => void })
         )
       }
     >
-      <div className="row wrap" style={{ gap: 10 }}>
+      <div className="row wrap" style={{ gap: 8 }}>
         <StatusLabel k={st} />
-        {a.priority === "urgent" || a.priority === "high" ? <span className="pill red">{a.priority === "urgent" ? "Urgent" : "High priority"}</span> : null}
+        {a.kind === "maintenance" && <span className="pill">Ticket</span>}
+        {a.priority === "urgent" && <span className="pill red">Urgent</span>}
       </div>
       {a.description && <p>{a.description}</p>}
 
-      <div className="mapbox" style={{ height: 210 }}>
-        <Map sites={[site]} dots={dots} fitKey={a.id + dots.length} zoom={16} />
-      </div>
-      <div className="row wrap small muted" style={{ gap: 14, marginTop: -6 }}>
-        <span className="row"><i className="dot" style={{ background: "#00C875" }} /> Check-in</span>
-        <span className="row"><i className="dot" style={{ background: "#FDAB3D" }} /> Check-out</span>
-        <span className="row"><i className="dot" style={{ background: "#E2445C" }} /> Blocked try</span>
-        <span>Zone: {site.radius} m</span>
-      </div>
-
-      {alerts.length > 0 && (
-        <div className="list">
-          {alerts.map((al) => (
-            <div key={al.id} className="note">
-              <b>{ALERT_META[al.type].label}</b>
-              {al.title}. {al.detail}
-            </div>
-          ))}
+      {alerts.map((al) => (
+        <div key={al.id} className="note">
+          <b>{ALERT_META[al.type].label}</b>
+          {al.detail}
         </div>
-      )}
+      ))}
 
+      <table className="tbl ptable">
+        <thead>
+          <tr><th>Person</th><th>In</th><th>Out</th>{a.reportRequired && <th>Report</th>}</tr>
+        </thead>
+        <tbody>
+          {people.map((p) => {
+            const att = attFor(d, a.id, p.id);
+            const rep = reportFor(d, a.id, p.id);
+            const ps = personState(d, a, p.id, now);
+            return (
+              <tr key={p.id} style={{ cursor: "default" }}>
+                <td><span className="row"><Avatar p={p} /> {p.name}</span></td>
+                <td style={{ color: ps === "late" || ps === "missed" ? "var(--down)" : undefined }}>{att?.checkInAt ? hm(att.checkInAt) : ps === "late" ? "Late" : ps === "missed" ? "Missed" : "—"}</td>
+                <td>{hm(att?.checkOutAt)}</td>
+                {a.reportRequired && <td>{rep ? <span className="pill green">Sent</span> : ps === "report" ? <span className="pill red">Missing</span> : "—"}</td>}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
       {people.map((p) => {
-        const att = attFor(d, a.id, p.id);
         const rep = reportFor(d, a.id, p.id);
-        const ps = personState(d, a, p.id, now);
-        const pill = STATE_PILL[ps];
-        return (
-          <div className="box" key={p.id}>
-            <div className="row">
-              <Avatar p={p} />
-              <b className="grow">{p.name}</b>
-              <span className={`pill ${pill.c}`}>{pill.t}</span>
-            </div>
-            <div className="tl">
-              <div className={att?.checkInAt ? "" : "off"}>
-                {att?.checkInAt ? <>Checked in <b>{hm(att.checkInAt)}</b> <time>· {fmtDist(att.checkInDist ?? 0)} from site centre</time></> : <span className="muted">Not checked in</span>}
-              </div>
-              <div className={att?.checkOutAt ? "" : "off"}>
-                {att?.checkOutAt ? <>Checked out <b>{hm(att.checkOutAt)}</b> <time>· worked {minsText((ms(att.checkOutAt) - ms(att.checkInAt)) / 60000)}</time></> : <span className="muted">Not checked out</span>}
-              </div>
-              {a.reportRequired && (
-                <div className={rep ? "" : ps === "report" ? "bad" : "off"}>
-                  {rep ? (
-                    <>
-                      Report <b>{hm(rep.at)}</b> <time>· {rep.outcome === "fixed" ? "Fixed" : rep.outcome === "partly" ? "Partly done" : "Needs follow-up"}</time>
-                      <div style={{ marginTop: 4 }}>&ldquo;{rep.text}&rdquo;</div>
-                    </>
-                  ) : (
-                    <span className="muted">No report yet</span>
-                  )}
-                </div>
-              )}
-            </div>
+        return rep ? (
+          <div key={p.id} className="goodnote">
+            <b>{p.name.split(" ")[0]}&apos;s report · {hm(rep.at)}</b> — {rep.text}
           </div>
-        );
+        ) : null;
       })}
 
-      <div className="box">
-        <span className="cap">Details & permissions</span>
-        <dl className="kv">
-          <dt>Site</dt><dd>{site.name}</dd>
-          <dt>Client</dt><dd>{site.client}</dd>
-          <dt>Stage</dt><dd>{site.stage}</dd>
-          <dt>Team</dt><dd>{team?.name ?? "—"}</dd>
-          <dt>Time slot</dt><dd>{dayLabel(a.start)}, {slot(a.start, a.end)}</dd>
-          <dt>Report needed</dt><dd>{a.reportRequired ? "Yes" : "No"}</dd>
-          <dt>Who can see</dt><dd>{VIS_LABEL[a.visibility]}</dd>
-          <dt>Who can edit</dt><dd>{EDIT_LABEL[a.editors]}</dd>
-          <dt>Who can check in</dt><dd>Only assigned people</dd>
-        </dl>
+      <div className="mapbox" style={{ height: 180 }}>
+        <Map sites={[site]} dots={dots} fitKey={a.id + dots.length} zoom={16} />
       </div>
+
+      <dl className="kv">
+        <dt>Team</dt><dd>{team?.name ?? "—"}</dd>
+        <dt>Who can see</dt><dd>{VIS_LABEL[a.visibility]}</dd>
+      </dl>
     </Drawer>
   );
 }

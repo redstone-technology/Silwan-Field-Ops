@@ -30,5 +30,11 @@ for (const f of files) {
 }
 fs.writeFileSync(path.join(dst, "index.html"), fix(fs.readFileSync(path.join(src, "index.html"), "utf8")));
 const list = [];
-(function w(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); e.isDirectory() ? w(p) : list.push(path.relative(dst, p)); } })(dst);
+(function w(d) {
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) w(p);
+    else list.push(path.relative(dst, p));
+  }
+})(dst);
 console.log(JSON.stringify(list));

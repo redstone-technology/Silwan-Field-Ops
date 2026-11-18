@@ -167,6 +167,19 @@ label.f .hint { font-weight: 400; color: var(--muted); font-size: 12.5px; }
 .task .s { font-size: 13px; color: var(--muted); }
 .list { display: grid; gap: 6px; align-content: start; grid-auto-rows: max-content; }
 
+/* simple one-line rows */
+.srow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: start; background: none; border: 0; border-block-end: 1px solid var(--line); padding: 8px 4px; color: inherit; min-height: 48px; }
+button.srow:hover, .srow:has(button.plain:hover) { background: var(--sunk); }
+.srow.on { background: var(--highlight); }
+.srow .t { display: block; font-size: 14.5px; }
+.srow .s { display: block; font-size: 13px; color: var(--muted); }
+.srow .status { min-width: 0; padding: 3px 8px; font-size: 13px; flex: none; }
+.list:has(.srow) { gap: 0; }
+.plain { all: unset; cursor: pointer; min-width: 0; }
+.ok { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--grid); background: var(--card); color: var(--muted); display: grid; place-items: center; flex: none; }
+.ok:hover { background: #00C875; border-color: #00C875; color: #fff; }
+.ptable td, .ptable th { padding: 6px 8px; }
+
 /* number widgets (Home) */
 .feature { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
 .feature .tag { font-family: var(--fh); font-size: 16px; font-weight: 500; }

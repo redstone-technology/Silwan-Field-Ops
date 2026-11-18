@@ -103,7 +103,6 @@ function Frame({ children }: { children: ReactNode }) {
   };
 
   const current = nav.find((n) => (n.href === "/" ? path === "/" : path === n.href)) ?? nav[0];
-  const sub = PAGE_SUB[current.href] ?? "";
   const home = nav[0];
   const boards = nav.slice(1);
 
@@ -156,10 +155,9 @@ function Frame({ children }: { children: ReactNode }) {
           <div className="phead">
             <div style={{ minWidth: 0 }}>
               <h1>{field ? `Hello, ${me.name.split(" ")[0]}` : current.label}</h1>
-              {sub && <p className="muted">{sub}</p>}
             </div>
             <span className="grow" />
-            {!field && path !== "/board" && (
+            {!field && path !== "/board" && path !== "/sites" && (
               <button className="btn" onClick={() => open({ type: "assign" })}>
                 <Icon n="plus" s={16} /> <span>New task</span>
               </button>
@@ -176,15 +174,6 @@ function Frame({ children }: { children: ReactNode }) {
   );
 }
 
-const PAGE_SUB: Record<string, string> = {
-  "/": "What's happening in the field right now",
-  "/board": "Every job: who, where, when and its status",
-  "/sites": "Each site has a check-in zone",
-  "/alerts": "Late, outside the site, still on site, report late",
-  "/timesheets": "Planned vs actual hours per technician",
-  "/tech": "Your jobs for today",
-  "/tech/week": "Your hours this week",
-};
 
 function Page({ path }: { path: string }) {
   const P = PAGES[path] ?? TodayPage;

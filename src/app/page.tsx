@@ -1,16 +1,14 @@
 "use client";
-import { AppLink } from "@/components/AppLink";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useData, useNow, useAlerts, useStore } from "@/lib/store";
 import { useVisible, useTeamNow, isToday, useStatusOf } from "@/lib/hooks";
 import { ALERT_META } from "@/lib/rules";
 import { ago, hm, slot, ms } from "@/lib/time";
-import { Avatar, Avatars, Icon, StatusLabel, useUI, Empty } from "@/components/ui";
+import { Avatar, Icon, StatusLabel, useUI, Empty } from "@/components/ui";
+import { AppLink } from "@/components/AppLink";
 import { Map } from "@/components/Map";
 
-type Bucket = "all" | "scheduled" | "onsite" | "late" | "done";
-
-export default function Today() {
+export default function Home() {
   const d = useData();
   const now = useNow();
   const visible = useVisible();
@@ -19,124 +17,94 @@ export default function Today() {
   const { open: alerts } = useAlerts(now);
   const ack = useStore((s) => s.acknowledge);
   const openDrawer = useUI((s) => s.open);
-  const [bucket, setBucket] = useState<Bucket>("all");
 
-  const today = useMemo(
-    () => visible.filter((a) => isToday(a, now)).sort((x, y) => ms(x.start) - ms(y.start)),
-    [visible, now],
-  );
-  const bucketOf = (k: string): Bucket =>
-    k === "onsite" ? "onsite" : k === "done" || k === "report" ? "done" : k === "late" || k === "missed" || k === "stuck" ? "late" : "scheduled";
-  const counts = { scheduled: 0, onsite: 0, late: 0, done: 0 };
-  today.forEach((a) => counts[bucketOf(statusOf(a)) as keyof typeof counts]++);
-  const list = bucket === "all" ? today : today.filter((a) => bucketOf(statusOf(a)) === bucket);
-
+  const today = useMemo(() => visible.filter((a) => isToday(a, now)).sort((x, y) => ms(x.start) - ms(y.start)), [visible, now]);
   const onSite = team.filter((t) => t.state === "onsite");
+  const late = team.filter((t) => t.state === "late");
   const pins = onSite.map((t) => ({ person: t.person, lat: t.site!.lat, lng: t.site!.lng, note: `At ${t.site!.name} since ${hm(t.since)}` }));
   const activeSites = d.sites.filter((s) => today.some((a) => a.siteId === s.id));
   const person = (id: string) => d.people.find((p) => p.id === id);
 
-  const TEAM_LABEL = { onsite: "On site", late: "Not arrived", next: "Coming up", free: "Free" };
-
   return (
     <div className="dash">
-      {/* left: today's jobs */}
+      {/* today's jobs */}
       <div className="col">
-        <div className="feature">
-          <svg className="star" viewBox="0 0 100 100" aria-hidden><path d="M50 0l12 38 38 12-38 12-12 38-12-38L0 50l38-12z" fill="#fff" /></svg>
-          <span className="tag">Today · {today.length} jobs <i /></span>
-          <div className="tiles">
-            {(["scheduled", "onsite", "late", "done"] as const).map((k) => (
-              <button key={k} className="tile" onClick={() => setBucket(bucket === k ? "all" : k)} style={bucket === k ? { boxShadow: "inset 0 0 0 2px var(--forest)" } : undefined}>
-                <b>{counts[k]}</b>
-                <span>{k === "scheduled" ? "Coming" : k === "onsite" ? "On site" : k === "late" ? "Late" : "Done"}</span>
-              </button>
-            ))}
-          </div>
-        </div>
         <div className="card fill" style={{ flex: 1 }}>
           <div className="card-h">
-            <h2>{bucket === "all" ? "Today's jobs" : `Today · ${bucket === "scheduled" ? "coming" : bucket === "onsite" ? "on site" : bucket}`}</h2>
+            <h2>Today&apos;s jobs <span className="muted">· {today.length}</span></h2>
             <AppLink href="/board" className="linkbtn">Board →</AppLink>
           </div>
           <div className="body list">
-            {list.map((a) => {
+            {today.map((a) => {
               const site = d.sites.find((s) => s.id === a.siteId);
               return (
-                <button key={a.id} className="task" onClick={() => openDrawer({ type: "assignment", id: a.id })}>
-                  <span className="ic"><Icon n={a.kind === "maintenance" ? "wrench" : "cam"} /></span>
-                  <span style={{ minWidth: 0 }}>
-                    <span className="t ell" style={{ display: "block" }}>{a.title}</span>
-                    <span className="s ell" style={{ display: "block" }}>{site?.name} · {slot(a.start, a.end)}</span>
-                    <span style={{ display: "block", marginTop: 4 }}><Avatars people={a.assigneeIds.map(person)} /></span>
+                <button key={a.id} className="srow" onClick={() => openDrawer({ type: "assignment", id: a.id })}>
+                  <Avatar p={person(a.assigneeIds[0])} />
+                  <span className="grow">
+                    <span className="t ell">{site?.name}</span>
+                    <span className="s ell">{slot(a.start, a.end)} · {a.title}</span>
                   </span>
                   <StatusLabel k={statusOf(a)} />
                 </button>
               );
             })}
-            {!list.length && <Empty title="Nothing here" text="No jobs in this group today." />}
+            {!today.length && <Empty title="No jobs today" />}
           </div>
         </div>
       </div>
 
-      {/* middle: where is my team now */}
+      {/* where is my team */}
       <div className="col">
-        <div className="card fill mapfill" style={{ flex: 1.35, padding: 14 }}>
-          <div className="card-h" style={{ padding: "4px 6px 0" }}>
+        <div className="card fill mapfill" style={{ flex: 1.3, padding: 12 }}>
+          <div className="card-h" style={{ padding: "4px 4px 0" }}>
             <h2>Where is my team now</h2>
-            <span className="pill lime">{onSite.length} on site</span>
+            <span className="row small">
+              <span className="pill lime">{onSite.length} on site</span>
+              {late.length > 0 && <span className="pill red">{late.length} late</span>}
+            </span>
           </div>
           <div className="mapbox" style={{ flex: 1 }}>
             <Map sites={activeSites} people={pins} fitKey={activeSites.map((s) => s.id).join()} zoom={13} showLabels={false} onSiteClick={(id) => openDrawer({ type: "site", id })} />
           </div>
         </div>
         <div className="card fill" style={{ flex: 1 }}>
-          <div className="card-h">
-            <h2>Team</h2>
-            <span className="muted small">From check-ins, not live tracking</span>
-          </div>
           <div className="body list">
-            {(["onsite", "late", "next", "free"] as const).map((k) =>
-              team
-                .filter((t) => t.state === k)
-                .map((t) => (
-                  <button key={t.person.id} className="task" style={{ gridTemplateColumns: "34px minmax(0,1fr) auto", padding: "8px 10px" }} onClick={() => t.a && openDrawer({ type: "assignment", id: t.a.id })}>
-                    <Avatar p={t.person} />
-                    <span style={{ minWidth: 0 }}>
-                      <span className="t ell" style={{ display: "block", fontSize: 14.5 }}>{t.person.name}</span>
-                      <span className="s ell" style={{ display: "block" }}>
-                        {k === "onsite" && `${t.site?.name} since ${hm(t.since)}`}
-                        {k === "late" && `Expected at ${t.site?.name} ${hm(t.a?.start)}`}
-                        {k === "next" && `${t.site?.name} at ${hm(t.a?.start)}`}
-                        {k === "free" && "No job right now"}
-                      </span>
-                    </span>
-                    <span className={`pill ${k === "onsite" ? "lime" : k === "late" ? "red" : ""}`}>{TEAM_LABEL[k]}</span>
-                  </button>
-                )),
-            )}
+            {team
+              .filter((t) => t.state === "onsite" || t.state === "late")
+              .sort((x, y) => (x.state === "late" ? 0 : 1) - (y.state === "late" ? 0 : 1))
+              .map((t) => (
+                <button key={t.person.id} className="srow" onClick={() => t.a && openDrawer({ type: "assignment", id: t.a.id })}>
+                  <Avatar p={t.person} />
+                  <span className="grow">
+                    <span className="t ell">{t.person.name}</span>
+                    <span className="s ell">{t.site?.name}</span>
+                  </span>
+                  {t.state === "onsite" ? <span className="pill lime">On site · {hm(t.since)}</span> : <span className="pill red">Not arrived</span>}
+                </button>
+              ))}
+            <span className="muted small" style={{ padding: "4px 2px" }}>
+              Free now: {team.filter((t) => t.state === "free" || t.state === "next").map((t) => t.person.name.split(" ")[0]).join(", ") || "nobody"}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* right: live alerts */}
+      {/* alerts */}
       <div className="col">
         <div className="card fill" style={{ flex: 1 }}>
           <div className="card-h">
-            <h2>Live alerts</h2>
+            <h2>Alerts <span className="muted">· {alerts.length}</span></h2>
             <AppLink href="/alerts" className="linkbtn">All →</AppLink>
           </div>
           <div className="body list">
             {alerts.map((al) => (
-              <div key={al.id} className="alertrow">
-                <span className="bar" style={{ background: ALERT_META[al.type].color }} />
-                <button style={{ all: "unset", cursor: "pointer", minWidth: 0 }} onClick={() => openDrawer({ type: "assignment", id: al.assignmentId })}>
-                  <span className="cap" style={{ color: ALERT_META[al.type].color }}>{ALERT_META[al.type].label}</span>
-                  <span className="t" style={{ display: "block" }}>{al.title}</span>
-                  <span className="s" style={{ display: "block" }}>{al.detail}</span>
-                  <span className="s" style={{ display: "block" }}>{ago(al.at, now)}</span>
+              <div key={al.id} className="srow">
+                <i className="dot" style={{ background: ALERT_META[al.type].color, width: 10, height: 10 }} />
+                <button className="grow plain" onClick={() => openDrawer({ type: "assignment", id: al.assignmentId })}>
+                  <span className="t">{al.title}</span>
+                  <span className="s">{ALERT_META[al.type].label} · {ago(al.at, now)}</span>
                 </button>
-                <button className="btn ghost sm" style={{ background: "var(--card)" }} onClick={() => ack(al.id)} title="Mark as handled">Got it</button>
+                <button className="ok" onClick={() => ack(al.id)} title="Got it" aria-label="Mark as handled"><Icon n="check" s={16} /></button>
               </div>
             ))}
             {!alerts.length && <Empty title="All good" text="No alerts right now." />}

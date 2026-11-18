@@ -15,26 +15,26 @@ export default function Sites() {
       <div className="col">
         <div className="card fill" style={{ flex: 1 }}>
           <div className="card-h">
-            <h2>Sites & projects</h2>
+            <h2>{d.sites.length} sites</h2>
             {isManager(me) && <button className="btn lime sm" onClick={() => open({ type: "site" })}><Icon n="plus" s={16} /> New site</button>}
           </div>
           <div className="body">
             <table className="tbl">
               <thead>
-                <tr><th>Site</th><th>Client</th><th>Stage</th><th className="num">Zone</th><th className="num">Jobs today</th></tr>
+                <tr><th>Site</th><th>Stage</th><th className="num">Jobs</th><th className="num">Today</th></tr>
               </thead>
               <tbody>
                 {d.sites.map((s) => {
-                  const today = d.assignments.filter((a) => a.siteId === s.id && isToday(a, now)).length;
+                  const all = d.assignments.filter((a) => a.siteId === s.id);
+                  const today = all.filter((a) => isToday(a, now)).length;
                   return (
                     <tr key={s.id} onClick={() => open({ type: "site", id: s.id })}>
                       <td>
-                        <span className="row"><i className="dot" style={{ background: s.color }} /><b className="ell">{s.name}</b></span>
-                        <span className="muted small">{s.address}</span>
+                        <span className="row"><i className="dot" style={{ background: s.color }} /><b className="ell" style={{ fontWeight: 500 }}>{s.name}</b></span>
+                        <span className="muted small" style={{ paddingInlineStart: 17 }}>{s.client}</span>
                       </td>
-                      <td className="small">{s.client}</td>
                       <td><span className="pill">{s.stage}</span></td>
-                      <td className="num small">{s.radius} m</td>
+                      <td className="num">{all.length}</td>
                       <td className="num">{today || <span className="muted">—</span>}</td>
                     </tr>
                   );
@@ -48,7 +48,7 @@ export default function Sites() {
         <div className="card fill mapfill" style={{ flex: 1, padding: 14 }}>
           <div className="card-h" style={{ padding: "4px 6px 0" }}>
             <h2>All sites</h2>
-            <span className="muted small">Circles = check-in zones</span>
+            <span className="muted small">Circle = check-in zone</span>
           </div>
           <div className="mapbox" style={{ flex: 1 }}>
             <Map sites={d.sites} fitKey={String(d.sites.length)} onSiteClick={(id) => open({ type: "site", id })} />

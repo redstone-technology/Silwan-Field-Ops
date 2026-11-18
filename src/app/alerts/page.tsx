@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useData, useNow, useAlerts, useStore, useMe } from "@/lib/store";
 import { ALERT_META, canSee, isManager } from "@/lib/rules";
 import type { AlertType } from "@/lib/types";
-import { ago, format } from "@/lib/time";
+import { ago } from "@/lib/time";
 import { Avatar, Icon, useUI, Empty } from "@/components/ui";
 
 const FILTERS: { id: "all" | AlertType; label: string }[] = [
@@ -37,16 +37,16 @@ export default function Alerts() {
     <div className="boardwrap">
       <div className="toolbar">
         <div className="row wrap" style={{ gap: 6 }}>
-          {FILTERS.map((x) => (
+          {FILTERS.filter((x) => x.id === "all" || f === x.id || count(x.id) > 0).map((x) => (
             <button key={x.id} className={`chip${f === x.id ? " on" : ""}`} onClick={() => setF(x.id)}>
               {x.id !== "all" && <i className="dot" style={{ background: ALERT_META[x.id].color }} />}
-              {x.label} <span style={{ opacity: .7 }}>{count(x.id)}</span>
+              {x.label}{x.id === "all" || count(x.id) ? <span style={{ opacity: .7 }}>{count(x.id)}</span> : null}
             </button>
           ))}
         </div>
         <span className="grow" />
-        <button className={`chip${handled ? " on" : ""}`} onClick={() => setHandled(!handled)}>Show handled</button>
-        {isManager(me) && <button className="btn ghost sm" onClick={() => open({ type: "settings" })}><Icon n="gear" s={16} /> Alert rules</button>}
+        <button className={`chip${handled ? " on" : ""}`} onClick={() => setHandled(!handled)}>Handled</button>
+        {isManager(me) && <button className="tbtn" onClick={() => open({ type: "settings" })} title="Alert rules" aria-label="Alert rules"><Icon n="gear" s={17} /></button>}
       </div>
       <div className="card">
         <div className="list">
@@ -60,8 +60,7 @@ export default function Alerts() {
                 <button style={{ all: "unset", cursor: "pointer", minWidth: 0 }} onClick={() => open({ type: "assignment", id: al.assignmentId })}>
                   <span className="row wrap" style={{ gap: 8 }}>
                     <span className="cap" style={{ color: ALERT_META[al.type].color }}>{ALERT_META[al.type].label}</span>
-                    {al.live && !done && <span className="pill red">Now</span>}
-                    <span className="muted small">{format(new Date(al.at), "EEE d MMM, H:mm")} · {ago(al.at, now)}</span>
+                    <span className="muted small">{ago(al.at, now)}</span>
                   </span>
                   <span className="t" style={{ display: "block" }}>{al.title}</span>
                   <span className="s" style={{ display: "block" }}>{al.detail}</span>

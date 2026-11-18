@@ -20,9 +20,8 @@ export default function Board() {
   const visible = useVisible();
   const [view, setView] = useState<View>("table");
   const [range, setRange] = useState<Range>("today");
-  const [group, setGroup] = useState<Group>("site");
+  const group: Group = "site";
   const [team, setTeam] = useState("");
-  const [kind, setKind] = useState("");
   const [q, setQ] = useState("");
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -35,7 +34,6 @@ export default function Board() {
           if (range === "week" && (ms(a.start) < ws || ms(a.start) >= ws + 7 * 86_400_000)) return false;
         }
         if (team && a.teamId !== team) return false;
-        if (kind && a.kind !== kind) return false;
         if (q) {
           const site = d.sites.find((s) => s.id === a.siteId);
           const names = a.assigneeIds.map((p) => d.people.find((x) => x.id === p)?.name).join(" ");
@@ -44,7 +42,7 @@ export default function Board() {
         return true;
       })
       .sort((x, y) => ms(x.start) - ms(y.start));
-  }, [visible, view, range, team, kind, q, now, ws, d]);
+  }, [visible, view, range, team, q, now, ws, d]);
 
   return (
     <div className="boardwrap">
@@ -83,27 +81,10 @@ export default function Board() {
         <label className="tbtn">
           <Icon n="person" s={17} />
           <select value={team} onChange={(e) => setTeam(e.target.value)} aria-label="Team">
-            <option value="">Person: all teams</option>
+            <option value="">All teams</option>
             {d.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
-        <label className="tbtn">
-          <Icon n="filter" s={17} />
-          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Filter">
-            <option value="">Filter</option>
-            <option value="task">Project tasks</option>
-            <option value="maintenance">Maintenance tickets</option>
-          </select>
-        </label>
-        {view === "table" && (
-          <label className="tbtn">
-            <Icon n="layers" s={17} />
-            <select value={group} onChange={(e) => setGroup(e.target.value as Group)} aria-label="Group by">
-              <option value="site">Group by: Site</option>
-              <option value="team">Group by: Team</option>
-            </select>
-          </label>
-        )}
       </div>
       <div className="card">
         {view === "table" && <TableView items={filtered} group={group} now={now} />}
@@ -144,14 +125,12 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
     <div style={{ overflowX: "auto" }}>
       {shown.map((g) => {
         const keys = g.items.map((a) => statusOf(a));
-        const first = g.items[0];
-        const last = g.items[g.items.length - 1];
         return (
           <section className="group" key={g.id} style={{ ["--g" as string]: g.color, minWidth: 900 }}>
             <div className="group-h">
               <span className="gchev"><Icon n="chev" s={16} /></span>
               <h3>{g.name}</h3>
-              <span className="muted small">{g.items.length} {g.items.length === 1 ? "task" : "tasks"} · {g.sub}</span>
+              <span className="muted small">{g.items.length} {g.items.length === 1 ? "task" : "tasks"}</span>
             </div>
             <table className="mtable">
               <colgroup>
@@ -193,7 +172,6 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
                           <span className="ell grow">{a.title}</span>
                           {a.kind === "maintenance" && <span className="tag-t">Ticket</span>}
                           {group === "team" && <span className="tag-t ell" style={{ maxWidth: 140 }}>{d.sites.find((s) => s.id === a.siteId)?.name}</span>}
-                          {a.visibility === "assigned" && <span className="muted" title="Only assigned people can see this"><Icon n="lock" s={14} /></span>}
                           <span className="upd" title="Open details"><Icon n="chat" s={18} /></span>
                         </span>
                       </td>
@@ -222,8 +200,7 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
                 <tr>
                   <td colSpan={3} />
                   <td><Battery keys={keys} /></td>
-                  <td><span className="tl-pill sum"><span>{format(new Date(first.start), "MMM d")}{format(new Date(first.start), "MMM d") !== format(new Date(last.end), "MMM d") ? ` – ${format(new Date(last.end), "MMM d")}` : ""}</span></span></td>
-                  <td colSpan={3} />
+                  <td colSpan={4} />
                 </tr>
               </tfoot>
             </table>

@@ -73,18 +73,15 @@ export default function TechDay() {
         {focus ? <JobCard a={focus} now={now} disabled={!consented} /> : <Empty title="No jobs today" text="Enjoy your day. New jobs will show here." />}
 
         {mine.length > 1 && (
-          <div className="card" style={{ padding: 16 }}>
-            <div className="card-h"><h2 style={{ fontSize: 17 }}>Today</h2><span className="muted small">{mine.length} jobs</span></div>
-            <div className="list">
+          <div className="card" style={{ padding: 12 }}>
+            <span className="cap" style={{ padding: "0 4px" }}>All my jobs today</span>
+            <div className="list" style={{ marginTop: 6 }}>
               {mine.map((a) => {
                 const site = d.sites.find((s) => s.id === a.siteId);
                 return (
-                  <button key={a.id} className="task" onClick={() => setPickedId(a.id)} style={a.id === focus?.id ? { boxShadow: "inset 0 0 0 2px var(--lime)" } : undefined}>
-                    <span className="ic"><Icon n={a.kind === "maintenance" ? "wrench" : "cam"} /></span>
-                    <span style={{ minWidth: 0 }}>
-                      <span className="t ell" style={{ display: "block" }}>{a.title}</span>
-                      <span className="s ell" style={{ display: "block" }}>{site?.name} · {slot(a.start, a.end)}</span>
-                    </span>
+                  <button key={a.id} className={`srow${a.id === focus?.id ? " on" : ""}`} onClick={() => setPickedId(a.id)}>
+                    <b style={{ fontWeight: 600, minWidth: 92 }}>{slot(a.start, a.end)}</b>
+                    <span className="grow ell">{site?.name}</span>
                     <StatusLabel k={statusOf(d, a, now)} />
                   </button>
                 );
@@ -201,16 +198,15 @@ function JobCard({ a, now, disabled }: { a: Assignment; now: number; disabled: b
         </div>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 600 }}>{a.title}</h1>
-          <p style={{ marginTop: 4 }} className="muted">{site.name} · {site.address}</p>
+          <p style={{ marginTop: 4 }} className="muted">{site.name}</p>
         </div>
         <div className="row wrap" style={{ gap: 8 }}>
           <span className="pill" style={{ background: "var(--card)", color: "var(--ink)" }}><Icon n="clock" s={14} /> {slot(a.start, a.end)}</span>
-          <span className="pill" style={{ background: "var(--card)", color: "var(--ink)" }}><Icon n="pin" s={14} /> Zone {site.radius} m</span>
         </div>
         {a.description && <p className="small">{a.description}</p>}
       </div>
 
-      <div className="mapbox" style={{ height: 190 }}>
+      <div className="mapbox" style={{ height: 160, minHeight: 0 }}>
         <Map
           sites={[site]}
           dots={shownHere ? [{ ...shownHere, color: "#1E4A16", label: "You" }] : att?.checkInLoc ? [{ ...att.checkInLoc, color: "#00C875", label: "Your check-in" }] : []}
@@ -246,11 +242,7 @@ function JobCard({ a, now, disabled }: { a: Assignment; now: number; disabled: b
       )}
 
       {att?.checkInAt && !att.checkOutAt && (
-        <div className="card" style={{ display: "grid", gap: 6 }}>
-          <span className="cap">On site since {hm(att.checkInAt)}</span>
-          <span className="timer">{minsText(worked)}</span>
-          <span className="muted small">Ends at {hm(a.end)}. Checked in {fmtDist(att.checkInDist ?? 0)} from the site.</span>
-        </div>
+        <div className="goodnote"><b>Checked in {hm(att.checkInAt)}</b> · on site {minsText(worked)} · ends {hm(a.end)}</div>
       )}
 
       {needReport && (
@@ -276,23 +268,19 @@ function JobCard({ a, now, disabled }: { a: Assignment; now: number; disabled: b
       )}
 
       {att?.checkOutAt && (
-        <div className="card" style={{ display: "grid", gap: 8 }}>
-          <span className="row"><span className="pill green"><Icon n="check" s={14} /> Checked out {hm(att.checkOutAt)}</span></span>
-          <span>Worked <b>{minsText(worked)}</b> ({hm(att.checkInAt)}–{hm(att.checkOutAt)})</span>
-          <div className="box" style={{ background: "var(--sunk)" }}>
-            <span className="cap">Demo · what the final app does</span>
-            <span className="small">The phone app notices if you stay inside the site after check-out and tells your manager. Tap to see the alert without waiting {d.settings.stillOnSiteMin} min.</span>
-            <button
-              className="btn red sm"
-              onClick={() => {
-                simulate(a.id, me.id);
-                say("Simulated: manager got 'checked out but still on site'");
-              }}
-            >
-              Simulate: still on site {d.settings.stillOnSiteMin} min later
-            </button>
-          </div>
-        </div>
+        <>
+          <div className="goodnote"><b>Done · checked out {hm(att.checkOutAt)}</b> · worked {minsText(worked)}</div>
+          <button
+            className="btn ghost sm"
+            onClick={() => {
+              simulate(a.id, me.id);
+              say("Manager got: 'checked out but still on site'");
+            }}
+            title="Demo: the real app notices this by itself"
+          >
+            Demo: stay on site {d.settings.stillOnSiteMin} min after check-out
+          </button>
+        </>
       )}
     </>
   );
