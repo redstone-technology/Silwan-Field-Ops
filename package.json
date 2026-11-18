@@ -1,14 +1,13 @@
 {
-  "name": "silwan-ops",
+  "name": "silwan-field-ops",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npx serve out",
     "lint": "eslint",
-    "build:preview": "ARTIFACT=1 next build && node scripts/artifact.mjs",
-    "build:static": "STATIC=1 next build"
+    "build:preview": "ARTIFACT=1 next build && node scripts/artifact.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

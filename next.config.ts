@@ -1,17 +1,11 @@
 import type { NextConfig } from "next";
 
-// ARTIFACT=1 builds a single static page for the Claude-hosted preview:
-// one index.html, hash navigation (#board, #alerts…), files loaded by relative path.
+// The app runs fully in the browser, so it is built as plain files (out/) for Cloudflare.
+// ARTIFACT=1 builds the Claude-hosted preview instead: one index.html, hash navigation,
+// files loaded by relative path.
 const artifact = process.env.ARTIFACT === "1";
-// STATIC=1 builds plain files (real routes like /board) for Cloudflare Pages or any static host.
-const staticSite = process.env.STATIC === "1";
 
-const nextConfig: NextConfig = staticSite
-  ? {
-      output: "export",
-      images: { unoptimized: true },
-    }
-  : artifact
+const nextConfig: NextConfig = artifact
   ? {
       output: "export",
       assetPrefix: ".",
@@ -19,8 +13,8 @@ const nextConfig: NextConfig = staticSite
       env: { NEXT_PUBLIC_ARTIFACT: "1" },
     }
   : {
-      cacheComponents: true,
-      partialPrefetching: true,
+      output: "export",
+      images: { unoptimized: true },
     };
 
 export default nextConfig;

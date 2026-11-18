@@ -10,12 +10,10 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Deploy on Cloudflare Pages (from GitHub):
-- Build command: `npm run build:static`
-- Build output directory: `out`
-- Environment variable: `NODE_VERSION` = `22`
-
-(Vercel also works with no settings.)
+Deploy on Cloudflare (Workers, connected to GitHub): `wrangler.jsonc` is in the repo.
+- Build command: `npm run build` (makes the static site in `out/`)
+- Deploy command: `npx wrangler deploy`
+Every push to `main` redeploys.
 GPS only works on **https** (Vercel gives this) or localhost.
 
 ## What's in Phase 1
