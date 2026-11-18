@@ -10,7 +10,12 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Deploy: push to GitHub → import in Vercel (no settings, no keys needed).
+Deploy on Cloudflare Pages (from GitHub):
+- Build command: `npm run build:static`
+- Build output directory: `out`
+- Environment variable: `NODE_VERSION` = `22`
+
+(Vercel also works with no settings.)
 GPS only works on **https** (Vercel gives this) or localhost.
 
 ## What's in Phase 1
