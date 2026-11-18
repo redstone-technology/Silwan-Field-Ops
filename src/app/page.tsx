@@ -87,7 +87,7 @@ export default function Today() {
             <span className="pill lime">{onSite.length} on site</span>
           </div>
           <div className="mapbox" style={{ flex: 1 }}>
-            <Map sites={activeSites} people={pins} fitKey={activeSites.map((s) => s.id).join()} zoom={13} onSiteClick={(id) => openDrawer({ type: "site", id })} />
+            <Map sites={activeSites} people={pins} fitKey={activeSites.map((s) => s.id).join()} zoom={13} showLabels={false} onSiteClick={(id) => openDrawer({ type: "site", id })} />
           </div>
         </div>
         <div className="card fill" style={{ flex: 1 }}>

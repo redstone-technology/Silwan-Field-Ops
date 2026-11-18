@@ -52,7 +52,7 @@ src/app/            one folder per screen
 ```
 
 Stack: Next.js (official starter), React, Leaflet + OpenStreetMap/CARTO tiles (no API key), Nominatim search, dnd-kit (kanban), date-fns, Zustand.
-Design: Redstone dashboard design (Urbanist, lime + forest, rounded frame). CSS uses logical properties so Arabic (RTL) can be switched on with `dir="rtl"`.
+Design: monday.com-style (white boards, blue primary, left sidebar, coloured groups, full-cell status labels; Figtree + Poppins). CSS uses logical properties so Arabic (RTL) can be switched on with `dir="rtl"`.
 
 ## Next steps for the real build
 1. Database + login (Supabase/Postgres): tables from `types.ts`, row-level security from `rules.ts` permissions.

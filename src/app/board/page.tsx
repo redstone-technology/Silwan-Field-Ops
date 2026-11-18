@@ -47,8 +47,8 @@ export default function Board() {
   return (
     <div className="boardwrap">
       <div className="toolbar">
-        <div className="seg">
-          <button className={view === "table" ? "on" : ""} onClick={() => setView("table")}><Icon n="board" s={16} /> Table</button>
+        <div className="tabs">
+          <button className={view === "table" ? "on" : ""} onClick={() => setView("table")}><Icon n="board" s={16} /> Main table</button>
           <button className={view === "kanban" ? "on" : ""} onClick={() => setView("kanban")}><Icon n="kanban" s={16} /> Kanban</button>
           <button className={view === "calendar" ? "on" : ""} onClick={() => setView("calendar")}><Icon n="cal" s={16} /> Calendar</button>
         </div>
@@ -148,7 +148,7 @@ function TableView({ items, group, now }: { items: Assignment[]; group: Group; n
                       </span>
                     </td>
                     <td><Avatars people={ppl} max={3} /></td>
-                    <td><StatusLabel k={statusOf(a)} cell /></td>
+                    <td className="stat"><StatusLabel k={statusOf(a)} cell /></td>
                     <td className="small">{multiDay && <span className="muted">{format(new Date(a.start), "EEE d")} · </span>}{slot(a.start, a.end)}</td>
                     <td className="small" style={{ color: late ? "var(--down)" : undefined, fontWeight: late ? 700 : undefined }}>{hm(firstIn)}</td>
                     <td className="small" style={{ color: early ? "var(--down)" : undefined, fontWeight: early ? 700 : undefined }}>{lastOut ? hm(lastOut) : "—"}</td>

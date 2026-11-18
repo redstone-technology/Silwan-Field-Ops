@@ -2,7 +2,7 @@
 import { useEffect, useState, type ReactNode, type ComponentType } from "react";
 import { useStore, useMe, useNow, useAlerts } from "@/lib/store";
 import { isManager } from "@/lib/rules";
-import { Icon, Toast, useUI } from "./ui";
+import { Avatar, Icon, Toast, useUI } from "./ui";
 import { Drawers } from "./Drawers";
 import { AppLink, IS_ARTIFACT, useAppPath, useGo } from "./AppLink";
 import TodayPage from "@/app/page";
@@ -25,8 +25,8 @@ const PAGES: Record<string, ComponentType> = {
 };
 
 const MANAGER_NAV = [
-  { href: "/", label: "Today", icon: "home" },
-  { href: "/board", label: "Board", icon: "board" },
+  { href: "/", label: "Home", icon: "home" },
+  { href: "/board", label: "Jobs board", icon: "board" },
   { href: "/sites", label: "Sites", icon: "pin" },
   { href: "/alerts", label: "Alerts", icon: "bell" },
   { href: "/timesheets", label: "Timesheets", icon: "sheet" },
@@ -113,70 +113,93 @@ function Frame({ children }: { children: ReactNode }) {
     say(`Now viewing as ${p.name} (${ROLE_LABEL[p.role]})`);
   };
 
+  const current = nav.find((n) => (n.href === "/" ? path === "/" : path === n.href)) ?? nav[0];
+  const sub = PAGE_SUB[current.href] ?? "";
+
   return (
-    <div className="page">
-      <div className="frame">
-        <header className="top">
-          <div className="brand">
-            <div className="logo"><i>S</i></div>
-            <div className="hello">
-              Hello, {me.name.split(" ")[0]}
-              <small>SILWAN FIELD OPS</small>
-            </div>
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          <div className="logo">S</div>
+          <b>Silwan</b>
+          <span className="muted">Field Ops</span>
+        </div>
+        <span className="grow" />
+        <label className="viewas">
+          <span>Viewing as</span>
+          <select value={me.id} onChange={(e) => switchUser(e.target.value)} aria-label="Viewing as">
+            <optgroup label="Office">
+              {people.filter((p) => isManager(p)).map((p) => (
+                <option key={p.id} value={p.id}>{p.name} · {ROLE_LABEL[p.role]}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Field">
+              {people.filter((p) => !isManager(p)).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}{p.role === "lead" ? " · Lead" : ""}</option>
+              ))}
+            </optgroup>
+          </select>
+        </label>
+        <Avatar p={me} />
+      </header>
+      <div className="body2">
+        <aside className="side">
+          <div className="ws">
+            <span className="wsicon">S</span>
+            <span className="ell">Silwan Security</span>
           </div>
-          <nav className="pills" aria-label="Main">
+          <nav aria-label="Main">
             {nav.map((n) => {
-              const on = n.href === "/" ? path === "/" : path === n.href || (n.href !== "/tech" && path.startsWith(n.href));
+              const on = n.href === current.href;
               return (
-                <AppLink key={n.href} href={n.href} className={`navpill${on ? " on" : ""}`}>
-                  {n.label}
+                <AppLink key={n.href} href={n.href} className={`navitem${on ? " on" : ""}`}>
+                  <Icon n={n.icon} />
+                  <span className="grow ell">{n.label}</span>
                   {n.href === "/alerts" && openAlerts.length > 0 && <span className="badge">{openAlerts.length}</span>}
                 </AppLink>
               );
             })}
           </nav>
-          <div className="tools">
-            <label className="viewas">
-              <span>Viewing as</span>
-              <select value={me.id} onChange={(e) => switchUser(e.target.value)} aria-label="Viewing as">
-                <optgroup label="Office">
-                  {people.filter((p) => isManager(p)).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name} · {ROLE_LABEL[p.role]}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Field">
-                  {people.filter((p) => !isManager(p)).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}{p.role === "lead" ? " · Lead" : ""}</option>
-                  ))}
-                </optgroup>
-              </select>
-            </label>
+          <div className="side-foot">
+            <span className="muted small">Sample data</span>
+            <button className="linkbtn" onClick={() => { resetDemo(); say("Demo data reset"); }}>Reset demo</button>
+            <button className="linkbtn" onClick={() => setTheme(theme === "auto" ? "dark" : theme === "dark" ? "light" : "auto")}>Theme: {theme}</button>
+            <span className="wm"><i></i>by Redstone</span>
+          </div>
+        </aside>
+        <section className="panel">
+          <div className="phead">
+            <div style={{ minWidth: 0 }}>
+              <h1>{field ? `Hello, ${me.name.split(" ")[0]}` : current.label}</h1>
+              {sub && <p className="muted">{sub}</p>}
+            </div>
+            <span className="grow" />
             {!field && (
               <button className="btn lime" onClick={() => open({ type: "assign" })}>
-                <Icon n="plus" /> <span>New task</span>
+                <Icon n="plus" s={16} /> <span>New task</span>
               </button>
             )}
           </div>
-        </header>
-        <main>
-          <div className="fadein" key={path}>{IS_ARTIFACT ? <Page path={path} /> : children}</div>
-        </main>
-        <footer className="bottom">
-          <span className="wm"><i></i>by Redstone</span>
-          <span className="row">
-            <span className="muted small">Sample data</span>
-            <button className="linkbtn" onClick={() => { resetDemo(); say("Demo data reset"); }}>Reset demo</button>
-            <button className="linkbtn" onClick={() => setTheme(theme === "auto" ? "dark" : theme === "dark" ? "light" : "auto")} title="Theme">
-              Theme: {theme}
-            </button>
-          </span>
-        </footer>
+          <main>
+            <div className="fadein" key={path}>{IS_ARTIFACT ? <Page path={path} /> : children}</div>
+          </main>
+        </section>
       </div>
       <Drawers />
       <Toast />
     </div>
   );
 }
+
+const PAGE_SUB: Record<string, string> = {
+  "/": "What's happening in the field right now",
+  "/board": "Every job: who, where, when and its status",
+  "/sites": "Each site has a check-in zone",
+  "/alerts": "Late, outside the site, still on site, report late",
+  "/timesheets": "Planned vs actual hours per technician",
+  "/tech": "Your jobs for today",
+  "/tech/week": "Your hours this week",
+};
 
 function Page({ path }: { path: string }) {
   const P = PAGES[path] ?? TodayPage;
